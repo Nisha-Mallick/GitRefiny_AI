@@ -1,9 +1,8 @@
-# GitRefiny_AI
+# GitRefiny — AI README Generator & Repo Documentation Assistant
 
 [![Stars](https://img.shields.io/github/stars/Nisha-Mallick/GitRefiny_AI?style=for-the-badge)](https://github.com/Nisha-Mallick/GitRefiny_AI/stargazers)
 [![Forks](https://img.shields.io/github/forks/Nisha-Mallick/GitRefiny_AI?style=for-the-badge)](https://github.com/Nisha-Mallick/GitRefiny_AI/network/members)
 [![License](https://img.shields.io/badge/License-MIT-ff69b4?style=for-the-badge)](https://github.com/Nisha-Mallick/GitRefiny_AI/blob/main/LICENSE)
-Revolutionizing Code Refinement with AI-Powered Insights
 
 ## Description
 
@@ -15,13 +14,13 @@ GitRefiny_AI is designed for developers, development teams, and organizations se
 
 ## Features
 
-* 🌟 **Code Analysis**: In-depth analysis of code patterns and structures
-* 🚀 **AI-Powered Insights**: Actionable recommendations for code improvement
-* 📈 **Code Optimization**: Suggestions for performance enhancements
-* 🚫 **Bug Detection**: Identification of potential bugs and errors
-* 📊 **Code Metrics**: Detailed metrics on code quality, complexity, and maintainability
-* 📝 **Code Review**: Automated code review and feedback
-* 🤖 **AI-Driven Refactoring**: Intelligent code refactoring suggestions
+* **Code Analysis**: In-depth analysis of code patterns and structures
+* **AI-Powered Insights**: Actionable recommendations for code improvement
+* **Code Optimization**: Suggestions for performance enhancements
+* **Bug Detection**: Identification of potential bugs and errors
+* **Code Metrics**: Detailed metrics on code quality, complexity, and maintainability
+* **Code Review**: Automated code review and feedback
+* **AI-Driven Refactoring**: Intelligent code refactoring suggestions
 
 ## Tech Stack
 ### Frontend
@@ -29,22 +28,24 @@ GitRefiny_AI is designed for developers, development teams, and organizations se
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![Tailwind_CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
 ### Backend
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
-
+![Fast_API](https://img.shields.io/badge/fastapi-109989?style=for-the-badge&logo=FASTAPI&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 ### Database
 
-No database technologies detected.
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 
 ### DevOps & Tools
 
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)
 
-## Architecture
+## Architectural-Flow-Diagram
 
 ```mermaid
 flowchart TD
@@ -89,31 +90,94 @@ flowchart TD
 ├── test_tech_icons.py
 ```
 
-## Installation
+## Setup Instructions
 
-To install the required dependencies, run the following command:
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- Firebase project with Firestore and Authentication enabled
+
+### Backend Setup
+
+1. Create virtual environment:
 ```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r backend/requirements.txt
+```
+
+3. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your Firebase and Kiro API credentials
+```
+
+4. Run Flask server:
+```bash
+python backend/app.py
+```
+
+### Frontend Setup
+
+1. Install dependencies:
+```bash
+cd frontend
 npm install
 ```
-Or, if you're using yarn:
+
+2. Build Tailwind CSS:
 ```bash
-yarn install
+npm run dev  # Development with watch mode
+# OR
+npm run build  # Production build
 ```
+
+3. Serve frontend (Flask serves static files on http://localhost:5000)
 
 ## Usage
 
-To start the application, run the following command:
+1. Open http://localhost:5000 in your browser
+2. Enter a GitHub repository URL
+3. Click "Analyze" to fetch repository data
+4. Review analysis and click "Generate README"
+5. Preview, copy, or download the generated README
+6. Sign in to save READMEs and use chat assistant
+
+## API Endpoints
+
+- `POST /api/analyze` - Analyze GitHub repository
+- `POST /api/generate` - Generate README from analysis
+- `POST /api/chat` - Chat with AI assistant
+- `POST /api/save` - Save README (authenticated)
+- `GET /api/saved/:uid` - Get saved READMEs (authenticated)
+
+## Testing
+
+Run unit tests:
 ```bash
-npm start
-```
-Or, if you're using yarn:
-```bash
-yarn start
+pytest tests/unit/
 ```
 
-## API Documentation
+Run property-based tests:
+```bash
+pytest tests/property/
+```
 
-No API documentation available.
+Run end-to-end smoke test:
+```bash
+pytest tests/e2e/smoke_test.py
+```
+
+## Known Limitations
+
+- Analysis limited to repositories with < 1000 files for performance
+- GitHub API rate limits apply (60 req/hour unauthenticated, 5000 authenticated)
+- Voice input requires browser support for Web Speech API
+- Private repos require Personal Access Token
 
 ## Contributing
 
@@ -123,6 +187,11 @@ Contributions are welcome! Please submit a pull request with your changes and a 
 
 This project is licensed under the MIT License.
 
-## Contact/Support
+## Contact/Connect with me :
 
-For issues, discussions, or support, please visit our [GitHub issues page](https://github.com/Nisha-Mallick/GitRefiny_AI/issues) or [GitHub discussions page](https://github.com/Nisha-Mallick/GitRefiny_AI/discussions).
+For issues, discussions, or support, please visit my <br>
+<br><a href="https://www.linkedin.com/in/nisha-mallick50/" target="blank"><img align="center" src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/linked-in-alt.svg" alt="nisha mallick" height="30" width="40" /></a>&nbsp;&nbsp;
+<a href="https://www.leetcode.com/u/Nisha_Mallick/" target="blank">
+  <img align="center" src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/leet-code.svg" alt="leetcode" height="30" width="40"/>
+</a>
+
