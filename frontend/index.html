@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GitRefiny - AI-powered README generator for GitHub repositories">
+    <title>GitRefiny — AI README Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#0a0a0a',
+                        'dark-panel': '#1a1a1a',
+                        'green-accent': '#10b981',
+                        'green-light': '#34d399',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.4);
+            backdrop-filter: blur(16px);
+            border-radius: 1rem;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        
+        .glass-button {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid #10b981;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.2s;
+        }
+        
+        .glass-button:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        
+        .glass-input {
+            background: rgba(26, 26, 26, 0.6);
+            border: 1px solid rgba(75, 85, 99, 1);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: rgb(243, 244, 246);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .glass-input:focus {
+            border-color: #10b981;
+        }
+        
+        .glass-input::placeholder {
+            color: rgba(156, 163, 175, 1);
+        }
+        
+        .text-green-accent {
+            color: #10b981;
+        }
+        
+        .text-green-light {
+            color: #34d399;
+        }
+        
+        .border-green-accent {
+            border-color: #10b981;
+        }
+        
+        .bg-green-accent {
+            background-color: #10b981;
+        }
+        
+        /* Body dark background */
+        body {
+            background-color: #0a0a0a;
+            color: #f3f4f6;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="glass-panel mx-4 mt-4 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-green-accent">GitRefiny</h1>
+                <p class="text-sm text-gray-400">AI README Generator</p>
+            </div>
+            <div id="auth-container" class="relative">
+                <!-- Sign In Button (shown when not authenticated) -->
+                <button id="auth-button" class="glass-button">
+                    Sign In
+                </button>
+                
+                <!-- Loading Skeleton (shown while checking auth state) -->
+                <div id="auth-loading" class="hidden flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gray-700 animate-pulse"></div>
+                    <div class="w-24 h-4 bg-gray-700 rounded animate-pulse"></div>
+                </div>
+                
+                <!-- User Profile (shown when authenticated) -->
+                <div id="user-profile" class="hidden relative">
+                    <button id="user-profile-button" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <img id="user-avatar" class="w-10 h-10 rounded-full border-2 border-green-accent object-cover" alt="User avatar" src="">
+                        <div class="text-left">
+                            <div id="user-name" class="text-gray-200 text-sm font-medium"></div>
+                            <div id="user-email" class="text-gray-400 text-xs"></div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 glass-panel py-2 z-[9999]">
+                        <button id="signout-button" class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-green-accent hover:bg-opacity-20 transition-colors">
+                            🚪 Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero / Input Section -->
+        <section id="input-section" class="glass-panel p-8 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-green-light">Enter GitHub Repository URL</h2>
+            <div class="flex gap-4">
+                <input 
+                    type="text" 
+                    id="repo-url-input" 
+                    class="glass-input flex-1" 
+                    placeholder="https://github.com/owner/repo"
+                    aria-label="GitHub repository URL"
+                >
+                <button id="analyze-button" class="glass-button">
+                    Analyze
+                </button>
+            </div>
+            <div id="error-message" class="hidden mt-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 rounded-lg text-red-300"></div>
+            <div id="loading-indicator" class="hidden mt-4 text-center text-gray-400">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-accent"></div>
+                <p class="mt-2">Analyzing repository...</p>
+            </div>
+        </section>
+
+        <!-- Analysis Card -->
+        <section id="analysis-card" class="hidden glass-panel p-8 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-green-light">Repository Analysis</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Metadata</h3>
+                    <div id="repo-metadata" class="space-y-2 text-gray-300"></div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Languages</h3>
+                    <div id="languages-breakdown" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h3 class="text-lg font-medium mb-2">Tech Stack</h3>
+                <div id="tech-stack" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="mt-6">
+                <h3 class="text-lg font-medium mb-2">File Structure</h3>
+                <div id="file-structure" class="font-mono text-sm text-gray-300"></div>
+            </div>
+        </section>
+
+        <!-- Generator Panel -->
+        <section id="generator-panel" class="hidden glass-panel p-8 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-green-light">Generate README</h2>
+            <div class="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm mb-2 text-gray-300">Tone</label>
+                    <select id="tone-selector" class="glass-input w-full">
+                        <option value="professional">Professional</option>
+                        <option value="concise">Concise</option>
+                        <option value="enthusiastic">Enthusiastic</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-2 text-gray-300">Model</label>
+                    <select id="model-selector" class="glass-input w-full">
+                        <option value="Auto">Auto (Recommended)</option>
+                        <option value="Llama 3">Llama 3.3 70B (Groq)</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button id="generate-button" class="glass-button w-full">
+                        Generate README
+                    </button>
+                </div>
+            </div>
+            <div id="generate-loading" class="hidden text-center text-gray-400">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-accent"></div>
+                <p class="mt-2">Generating README...</p>
+            </div>
+        </section>
+
+        <!-- Preview Panel -->
+        <section id="preview-panel" class="hidden glass-panel p-8 mb-6">
+            <!-- Toggle Tabs (GitHub Style) -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex gap-2 border-b border-gray-700">
+                    <button id="edit-tab" class="px-4 py-2 text-sm font-medium text-green-accent border-b-2 border-green-accent transition-colors">
+                        Markdown
+                    </button>
+                    <button id="preview-tab" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition-colors">
+                        Preview
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button id="copy-button" class="glass-button text-sm">
+                        Copy
+                    </button>
+                    <button id="download-button" class="glass-button text-sm">
+                        Download
+                    </button>
+                    <button id="save-button" class="hidden glass-button text-sm">
+                        Save
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Edit View (Raw Markdown) -->
+            <div id="markdown-edit" class="bg-dark-bg bg-opacity-50 p-6 rounded-lg overflow-auto max-h-96">
+                <pre class="text-sm text-gray-300 whitespace-pre-wrap font-mono"><code id="markdown-code"></code></pre>
+            </div>
+            
+            <!-- Preview View (Rendered HTML) -->
+            <div id="markdown-preview" class="hidden prose prose-invert max-w-none bg-dark-bg bg-opacity-50 p-6 rounded-lg overflow-auto max-h-96"></div>
+        </section>
+
+        <!-- Floating Chat Bubble Button (Always Visible) -->
+        <button id="chat-bubble-button" class="fixed bottom-6 right-6 w-16 h-16 bg-green-accent hover:bg-green-light rounded-full shadow-lg flex items-center justify-center text-2xl transition-all duration-300 z-40">
+            💬
+        </button>
+
+        <!-- Floating Chat Window -->
+        <div id="chat-window" class="hidden fixed top-20 right-6 w-96 h-[calc(100vh-120px)] max-h-[600px] glass-panel rounded-lg shadow-2xl flex flex-col z-50">
+            <!-- Chat Header -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-green-light">AI Assistant</h3>
+                <button id="close-chat" class="text-gray-400 hover:text-gray-200 text-2xl leading-none">&times;</button>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+            
+            <!-- Recording Indicator -->
+            <div id="recording-indicator" class="hidden px-4 py-2 text-sm text-green-accent animate-pulse">
+                🔴 Recording...
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex gap-2 items-end">
+                    <textarea 
+                        id="chat-input" 
+                        class="glass-input flex-1 resize-none overflow-y-auto min-h-[40px] max-h-[120px] py-2" 
+                        placeholder="Ask about your README..."
+                        aria-label="Chat message"
+                        rows="1"
+                    ></textarea>
+                    <button id="mic-button" class="glass-button p-2 w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Voice input">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-green-accent">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" x2="12" y1="19" y2="22"></line>
+                        </svg>
+                    </button>
+                    <button id="send-button" class="glass-button px-4 flex-shrink-0">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="glass-panel p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="auth-modal-title" class="text-2xl font-bold text-green-accent">Sign In</h2>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            
+            <!-- Sign In Mode -->
+            <div id="signin-mode">
+                <input type="email" id="signin-email" class="glass-input w-full mb-4" placeholder="Email">
+                <div class="relative mb-4">
+                    <input type="password" id="signin-password" class="glass-input w-full pr-12" placeholder="Password">
+                    <button type="button" id="toggle-signin-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-accent transition-colors">
+                        <svg id="signin-eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg id="signin-eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button id="signin-submit" class="glass-button w-full mb-4">
+                    <span id="signin-submit-text">Sign In</span>
+                    <span id="signin-loading" class="hidden">Signing in...</span>
+                </button>
+                <button id="google-signin" class="glass-button w-full mb-4">
+                    <span id="google-signin-text">🔐 Sign in with Google</span>
+                    <span id="google-signin-loading" class="hidden">Signing in...</span>
+                </button>
+                <p class="text-center text-sm text-gray-400">
+                    Don't have an account? 
+                    <button id="switch-to-signup" class="text-green-accent hover:underline">Sign up</button>
+                </p>
+            </div>
+            
+            <!-- Sign Up Mode -->
+            <div id="signup-mode" class="hidden">
+                <input type="text" id="signup-name" class="glass-input w-full mb-4" placeholder="Display Name">
+                <input type="email" id="signup-email" class="glass-input w-full mb-4" placeholder="Email">
+                <div class="relative mb-4">
+                    <input type="password" id="signup-password" class="glass-input w-full pr-12" placeholder="Password (min 6 characters)">
+                    <button type="button" id="toggle-signup-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-accent transition-colors">
+                        <svg id="signup-eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg id="signup-eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="relative mb-4">
+                    <input type="password" id="signup-confirm" class="glass-input w-full pr-12" placeholder="Confirm Password">
+                    <button type="button" id="toggle-signup-confirm" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-accent transition-colors">
+                        <svg id="confirm-eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg id="confirm-eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button id="signup-submit" class="glass-button w-full mb-4">
+                    <span id="signup-submit-text">Create Account</span>
+                    <span id="signup-loading" class="hidden">Creating account...</span>
+                </button>
+                <button id="google-signup" class="glass-button w-full mb-4">
+                    <span id="google-signup-text">🔐 Sign up with Google</span>
+                    <span id="google-signup-loading" class="hidden">Signing up...</span>
+                </button>
+                <p class="text-center text-sm text-gray-400">
+                    Already have an account? 
+                    <button id="switch-to-signin" class="text-green-accent hover:underline">Sign in</button>
+                </p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="auth-error" class="hidden mt-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 rounded-lg text-red-300 text-sm"></div>
+            
+            <!-- Success Message -->
+            <div id="auth-success" class="hidden mt-4 p-3 bg-green-900 bg-opacity-20 border border-green-500 rounded-lg text-green-300 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Firebase Services -->
+    <script src="auth-service.js"></script>
+    <script src="firestore-service.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+project:
+  name: "GitRefiny"
+  display_name: "GitRefiny — AI README Generator & Repo Documentation Assistant"
+  description: |
+    Turn any GitHub repository link into a polished, context aware README.md.
+    Provide a preview, downloadable Markdown, and an AI assistant for iterative refinement.
+  purpose: "Single-purpose micro-tool: fetch a GitHub repo and generate a professional README.md + preview + small chat assistant."
+
+tech_stack:
+  frontend:
+    - html
+    - tailwindcss (dev mode, installed in project root)
+    - vanilla javascript (ES6 modules)
+    - markdown-it (client-side markdown preview)
+  backend:
+    - python 3.11+
+    - flask (lightweight API server)
+    - gunicorn (optional for production)
+  ai:
+    - kiro_agent_models: ["Auto", "Claude Sonnet 4.5"]  # use Auto for iteration, Sonnet for final generation
+    - use_kiro_mcp: true  # connect to GitHub MCP to let agent read repo trees and files
+  database:
+    - firebase_firestore (store users, conversations, generated readmes)
+    - firebase_auth (OAuth + email/password)
+  hosting:
+    - static build served by Flask or separate static host (Netlify/Static) — but for challenge use local Flask static serving.
+
+features:
+  - Input: GitHub repo URL (public or user-provided token for private repos)
+  - Fetch: repo metadata, language detection, file tree (recursive), package files, README (if exists)
+  - Analyze: detect frameworks, main entry points, package managers, APIs, and docstrings
+  - Generate README .md in markdown with sections:
+      - Title & badge placeholders
+      - Short description (1-3 sentences)
+      - Features / Highlights
+      - Architecture / Flow diagram placeholder (ASCII or mermaid)
+      - File structure (top-level structure)
+      - Tech stack (detected)
+      - Setup & Installation (auto-populated from package files if present)
+      - Usage snippets
+      - API endpoints (if backend detected)
+      - Screenshots placeholders & badges
+      - Contributing & License / Contact
+  - UI: Markdown preview, copy-to-clipboard, download .md button
+  - Assistant: chatbox to refine sections, persist conversation, remember user profile for future sessions (Firebase)
+  - Authentication: optional sign-in (Firebase) to save generated readme history and chats
+  - Rate limiting & caching: cache repo analysis results for 1 hour to avoid re-scans
+  - Accessibility: basic keyboard/tab flows and alt text for images.
+
+acceptance_criteria:
+  - AC1: Given a public GitHub repo link, backend fetches the repo tree and returns a JSON analysis (languages, file tree, package manifests) within 10s.
+  - AC2: Clicking "Generate README" returns a ready-to-copy markdown string that renders in preview; preview must show Title, Tech Stack, and File Structure sections.
+  - AC3: Users signed in via Firebase can view a saved history of generated READMEs and conversations.
+  - AC4: Chat assistant persists conversation and can refer to previous messages for the same user.
+
+mcp_integration_github:
+  description: |
+    Use Kiro's MCP to read GitHub repo files and metadata. For public repos agent will use unauthenticated GitHub REST endpoints; for private repos agent will request a Personal Access Token from the user (or perform OAuth).
+  endpoints_required:
+    - GET /repos/:owner/:repo  # repo metadata
+    - GET /repos/:owner/:repo/git/trees/:branch?recursive=1  # full file tree
+    - GET /repos/:owner/:repo/readme  # existing README content
+    - GET /repos/:owner/:repo/contents/:path  # fetch specific files
+    - GET /repos/:owner/:repo/languages  # language breakdown
+  authentication:
+    - public_repos: no token required
+    - private_repos: prompt user to provide PAT or OAuth via Firebase Auth GitHub provider (recommended)
+  caching: "Cache tree & metadata per repo URL for 1 hour in memory or server cache (Redis optional)."
+
+firebase:
+  auth: true
+  firestore_collections:
+    - users: {uid, displayName, email, photoURL, createdAt}
+    - saved_readmes: {id, uid, repo_url, generated_md, createdAt, meta}
+    - conversations: {id, uid, messages[], createdAt, lastUpdated}
+  rules: "restrict saved_readmes & conversations to owner uid."
+
+api_contract:
+  - POST /api/analyze
+    payload: { repo_url: string, token?: string }
+    response: { repo_meta, languages, file_tree_summary, detected_stack, hints }
+  - POST /api/generate
+    payload: { repo_url, analysis_id, sections: [list-of-sections-or-empty-for-all], tone?: "professional"|"concise"|"enthusiastic", model?: "Auto"|"Sonnet" }
+    response: { markdown: string, generated_at, credits_used? }
+  - POST /api/preview
+    payload: { markdown }
+    response: { html_rendered }
+  - POST /api/chat
+    payload: { uid?, session_id?, message, context_refs? }
+    response: { assistant_message, session_id }
+  - GET /api/saved/:uid
+    response: list saved_readmes
+  - POST /api/save
+    payload: { uid, repo_url, markdown, meta }
+    response: success
+
+tests:
+  - unit: python pytest for API analysis functions (file tree parsing, language detection)
+  - e2e: smoke test that calls /api/analyze -> /api/generate -> /api/preview and asserts preview contains Title and Tech Stack strings
+
+ui_spec:
+  theme:
+    - style: "dark glassy green + black"
+    - design: "glassmorphism (blur, translucent panels, soft green accents)"
+    - fonts: "rounded friendly (e.g., Inter or a monospace for code blocks)"
+  components:
+    - hero: input field for repo URL, analyze button, auth quick links
+    - analysis_card: shows repo meta, languages, file structure summary
+    - generator_panel: controls for tone, sections toggle, generate button
+    - preview_panel: markdown preview, copy, download
+    - chat_assistant: persistent chat with history
+  responsive: true (stack panels on mobile, swipeable)
+
+agent_preferences:
+  - initial_model: "Auto"
+  - heavy_generation_model: "Claude Sonnet 4.5"
+  - autopilot: false
+  - max_steps: 10
+  - commit_style: "short, imperative; <50 char summary + one-line body"
+
+milestones:
+  - M1: scaffold repo (frontend static + flask backend, tailwind setup). (timebox: 45 minutes)
+  - M2: implement analyze endpoint using MCP GitHub tree fetch; return analysis JSON. (timebox: 3 hours)
+  - M3: implement generate endpoint using Kiro LLM API and templates; simple README output. (timebox: 4 hours)
+  - M4: frontend: repo input, analyze view, generate preview & copy. (timebox: 6 hours)
+  - M5: firebase integration minimal (auth + save). (timebox: 3 hours)
+  - M6: polish + tests + README for submission. (timebox: 3 hours)
+
+deliverables:
+  - source code repo with commits
+  - deployed or runnable local app with minimal run instructions
+  - short README that explains usage and limitation (for submission)
+project:
+  name: "GitRefiny"
+  display_name: "GitRefiny — AI README Generator & Repo Documentation Assistant"
+  description: |
+    Turn any GitHub repository link into a polished, context aware README.md.
+    Provide a preview, downloadable Markdown, and an AI assistant for iterative refinement.
+  purpose: "Single-purpose micro-tool: fetch a GitHub repo and generate a professional README.md + preview + small chat assistant."
+
+tech_stack:
+  frontend:
+    - html
+    - tailwindcss (dev mode, installed in project root)
+    - vanilla javascript (ES6 modules)
+    - markdown-it (client-side markdown preview)
+  backend:
+    - python 3.11+
+    - flask (lightweight API server)
+    - gunicorn (optional for production)
+  ai:
+    - kiro_agent_models: ["Auto", "Claude Sonnet 4.5"]  # use Auto for iteration, Sonnet for final generation
+    - use_kiro_mcp: true  # connect to GitHub MCP to let agent read repo trees and files
+  database:
+    - firebase_firestore (store users, conversations, generated readmes)
+    - firebase_auth (OAuth + email/password)
+  hosting:
+    - static build served by Flask or separate static host (Netlify/Static) — but for challenge use local Flask static serving.
+
+features:
+  - Input: GitHub repo URL (public or user-provided token for private repos)
+  - Fetch: repo metadata, language detection, file tree (recursive), package files, README (if exists)
+  - Analyze: detect frameworks, main entry points, package managers, APIs, and docstrings
+  - Generate README .md in markdown with sections:
+      - Title & badge placeholders
+      - Short description (1-3 sentences)
+      - Features / Highlights
+      - Architecture / Flow diagram placeholder (ASCII or mermaid)
+      - File structure (top-level structure)
+      - Tech stack (detected)
+      - Setup & Installation (auto-populated from package files if present)
+      - Usage snippets
+      - API endpoints (if backend detected)
+      - Screenshots placeholders & badges
+      - Contributing & License / Contact
+  - UI: Markdown preview, copy-to-clipboard, download .md button
+  - Assistant: chatbox to refine sections, persist conversation, remember user profile for future sessions (Firebase)
+  - Authentication: optional sign-in (Firebase) to save generated readme history and chats
+  - Rate limiting & caching: cache repo analysis results for 1 hour to avoid re-scans
+  - Accessibility: basic keyboard/tab flows and alt text for images.
+
+acceptance_criteria:
+  - AC1: Given a public GitHub repo link, backend fetches the repo tree and returns a JSON analysis (languages, file tree, package manifests) within 10s.
+  - AC2: Clicking "Generate README" returns a ready-to-copy markdown string that renders in preview; preview must show Title, Tech Stack, and File Structure sections.
+  - AC3: Users signed in via Firebase can view a saved history of generated READMEs and conversations.
+  - AC4: Chat assistant persists conversation and can refer to previous messages for the same user.
+
+mcp_integration_github:
+  description: |
+    Use Kiro's MCP to read GitHub repo files and metadata. For public repos agent will use unauthenticated GitHub REST endpoints; for private repos agent will request a Personal Access Token from the user (or perform OAuth).
+  endpoints_required:
+    - GET /repos/:owner/:repo  # repo metadata
+    - GET /repos/:owner/:repo/git/trees/:branch?recursive=1  # full file tree
+    - GET /repos/:owner/:repo/readme  # existing README content
+    - GET /repos/:owner/:repo/contents/:path  # fetch specific files
+    - GET /repos/:owner/:repo/languages  # language breakdown
+  authentication:
+    - public_repos: no token required
+    - private_repos: prompt user to provide PAT or OAuth via Firebase Auth GitHub provider (recommended)
+  caching: "Cache tree & metadata per repo URL for 1 hour in memory or server cache (Redis optional)."
+
+firebase:
+  auth: true
+  firestore_collections:
+    - users: {uid, displayName, email, photoURL, createdAt}
+    - saved_readmes: {id, uid, repo_url, generated_md, createdAt, meta}
+    - conversations: {id, uid, messages[], createdAt, lastUpdated}
+  rules: "restrict saved_readmes & conversations to owner uid."
+
+api_contract:
+  - POST /api/analyze
+    payload: { repo_url: string, token?: string }
+    response: { repo_meta, languages, file_tree_summary, detected_stack, hints }
+  - POST /api/generate
+    payload: { repo_url, analysis_id, sections: [list-of-sections-or-empty-for-all], tone?: "professional"|"concise"|"enthusiastic", model?: "Auto"|"Sonnet" }
+    response: { markdown: string, generated_at, credits_used? }
+  - POST /api/preview
+    payload: { markdown }
+    response: { html_rendered }
+  - POST /api/chat
+    payload: { uid?, session_id?, message, context_refs? }
+    response: { assistant_message, session_id }
+  - GET /api/saved/:uid
+    response: list saved_readmes
+  - POST /api/save
+    payload: { uid, repo_url, markdown, meta }
+    response: success
+
+tests:
+  - unit: python pytest for API analysis functions (file tree parsing, language detection)
+  - e2e: smoke test that calls /api/analyze -> /api/generate -> /api/preview and asserts preview contains Title and Tech Stack strings
+
+ui_spec:
+  theme:
+    - style: "dark glassy green + black"
+    - design: "glassmorphism (blur, translucent panels, soft green accents)"
+    - fonts: "rounded friendly (e.g., Inter or a monospace for code blocks)"
+  components:
+    - hero: input field for repo URL, analyze button, auth quick links
+    - analysis_card: shows repo meta, languages, file structure summary
+    - generator_panel: controls for tone, sections toggle, generate button
+    - preview_panel: markdown preview, copy, download
+    - chat_assistant: persistent chat with history
+  responsive: true (stack panels on mobile, swipeable)
+
+agent_preferences:
+  - initial_model: "Auto"
+  - heavy_generation_model: "Claude Sonnet 4.5"
+  - autopilot: false
+  - max_steps: 10
+  - commit_style: "short, imperative; <50 char summary + one-line body"
+
+milestones:
+  - M1: scaffold repo (frontend static + flask backend, tailwind setup). (timebox: 45 minutes)
+  - M2: implement analyze endpoint using MCP GitHub tree fetch; return analysis JSON. (timebox: 3 hours)
+  - M3: implement generate endpoint using Kiro LLM API and templates; simple README output. (timebox: 4 hours)
+  - M4: frontend: repo input, analyze view, generate preview & copy. (timebox: 6 hours)
+  - M5: firebase integration minimal (auth + save). (timebox: 3 hours)
+  - M6: polish + tests + README for submission. (timebox: 3 hours)
+
+deliverables:
+  - source code repo with commits
+  - deployed or runnable local app with minimal run instructions
+  - short README that explains usage and limitation (for submission)

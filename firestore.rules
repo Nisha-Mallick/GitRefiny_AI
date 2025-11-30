@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check ownership
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if isOwner(userId);
+    }
+    
+    // README History subcollection
+    match /users/{userId}/readmeHistory/{docId} {
+      // Users can only access their own README history
+      allow read, write, delete: if isOwner(userId);
+      
+      // Validate data structure on write
+      allow create: if isOwner(userId) 
+        && request.resource.data.keys().hasAll(['userId', 'repoUrl', 'markdown', 'createdAt'])
+        && request.resource.data.userId == userId;
+    }
+    
+    // Chat History subcollection
+    match /users/{userId}/chatHistory/{docId} {
+      // Users can only access their own chat history
+      allow read, write, delete: if isOwner(userId);
+      
+      // Validate data structure on write
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['userId', 'role', 'content', 'timestamp'])
+        && request.resource.data.userId == userId
+        && request.resource.data.role in ['user', 'assistant'];
+    }
+  }
+}
